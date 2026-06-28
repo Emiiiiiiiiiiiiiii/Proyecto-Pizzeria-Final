@@ -3,24 +3,28 @@ package com.pizzas.autenticacion.exception;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// DTO usado para responder errores de forma ordenada en JSON
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 
 public class ErrorDTO {
+    // Fecha y hora en que ocurrió el error
     private LocalDateTime timestamp;
-    private int status;
-    private String mensaje;
-    private Map<String, String> errores;
-    private String path;
 
-    public ErrorDTO(LocalDateTime timestamp, int status, String mensaje, Map<String, String> errores, String path) {
-        this.timestamp = timestamp;
-        this.status = status;
-        this.mensaje = mensaje;
-        this.errores = errores;
-        this.path = path;
-    }
+    // Código HTTP del error
+    private int status;
+
+    // Mensaje general del error
+    private String mensaje;
+
+    // Lista de errores específicos, por ejemplo errores de validación
+    private Map<String, String> errores;
+
+    // Ruta donde ocurrió el error
+    private String path;
 }
