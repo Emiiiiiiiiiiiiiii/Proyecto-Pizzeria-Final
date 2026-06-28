@@ -21,6 +21,9 @@ public class PedidoResponseDTO {
     // Estado actual del pedido
     private String estado;
 
+    //Detalle del pedido
+    private String detalleProductos;
+
     // Fecha de creación del pedido
     private String fechaPedido;
 

@@ -32,7 +32,6 @@ import com.pizzas.pedido.model.Pedido;
 import com.pizzas.pedido.repository.PedidoRepository;
 
 @Service
-
 public class PedidoService {
     // Logger para registrar eventos importantes del pedido
     private static final Logger logger = LoggerFactory.getLogger(PedidoService.class);
@@ -75,6 +74,7 @@ public class PedidoService {
 
         int total = calcularMontoTotal(itemsCarrito);
         int cantidadTotal = calcularCantidadTotal(itemsCarrito);
+        String detalleProductos = construirDetalleProductos(itemsCarrito);
 
         Pedido pedido = new Pedido();
         pedido.setUsuarioId(request.getUsuarioId());
@@ -82,6 +82,7 @@ public class PedidoService {
         pedido.setEmailCliente(usuario.getEmail());
         pedido.setMontoTotal(total);
         pedido.setCantidadTotalItems(cantidadTotal);
+        pedido.setDetalleProductos(detalleProductos);
         pedido.setEstado("PENDIENTE");
         pedido.setMetodoPago(request.getMetodoPago().trim().toUpperCase());
         pedido.setFechaPedido(LocalDateTime.now().format(FORMATO_FECHA));
@@ -108,6 +109,7 @@ public class PedidoService {
                     guardado.getMontoTotal(),
                     guardado.getEstado(),
                     guardado.getFechaPedido(),
+                    guardado.getDetalleProductos(),
                     "Pedido completado correctamente"
             );
 
@@ -420,6 +422,25 @@ public class PedidoService {
         }
 
         return cantidadTotal;
+    }
+
+    // Construye el resumen de productos antes de vaciar el carrito
+    private String construirDetalleProductos(List<CarritoDetalleDTO> items) {
+        List<String> detalles = new ArrayList<>();
+
+        for (CarritoDetalleDTO item : items) {
+            String nombrePizza = item.getNombrePizza() != null && !item.getNombrePizza().isBlank()
+                    ? item.getNombrePizza()
+                    : "Pizza sin nombre";
+
+            String tamanio = item.getTamanio() != null && !item.getTamanio().isBlank()
+                    ? " " + item.getTamanio()
+                    : "";
+
+            detalles.add(item.getCantidad() + "x " + nombrePizza + tamanio);
+        }
+
+        return String.join(", ", detalles);
     }
 
     // Valida y normaliza estados permitidos
