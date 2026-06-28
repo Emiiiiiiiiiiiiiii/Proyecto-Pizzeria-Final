@@ -15,11 +15,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
+// DTOs usados para login, registro y respuesta pública
 import com.pizzas.autenticacion.dto.FormularioIngresoDTO;
 import com.pizzas.autenticacion.dto.PerfilUsuarioPublicoDTO;
+import com.pizzas.autenticacion.dto.UsuarioRegistroDTO;
+
+// Modelo usado para actualizar datos del usuario
 import com.pizzas.autenticacion.model.Usuario;
+
+// Service donde está la lógica de negocio
 import com.pizzas.autenticacion.service.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -27,71 +32,85 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/auth")
 public class UsuarioController {
+    // Service de autenticación
     private final UsuarioService usuarioService;
-    private final RestTemplate restTemplate;
 
-    public UsuarioController(UsuarioService usuarioService, RestTemplate restTemplate) {
-    this.usuarioService = usuarioService;
-    this.restTemplate = restTemplate;
-
+    // Constructor para inyectar el service
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
     }
 
-    //POST http://localhost:8080/auth/registrar
+    // POST http://localhost:8080/auth/registrar
     @PostMapping("/registrar")
-    public ResponseEntity<Map<String, Object>> registrar(@Valid @RequestBody Usuario usuario) {
-        Map<String, Object> datosRegistro = usuarioService.registrar(usuario);
-    
-        return new ResponseEntity<>(datosRegistro, HttpStatus.CREATED);
+    public ResponseEntity<Map<String, Object>> registrar(@Valid @RequestBody UsuarioRegistroDTO usuario) {
 
+        Map<String, Object> datosRegistro = usuarioService.registrar(usuario);
+
+        return new ResponseEntity<>(datosRegistro, HttpStatus.CREATED);
     }
 
-    //POST http://localhost:8080/auth/login
+    // POST http://localhost:8080/auth/login
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody FormularioIngresoDTO formulario) {
-        var datosUsuario = usuarioService.iniciarSesion(formulario);
-        
+    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody FormularioIngresoDTO formulario) {
+
+        PerfilUsuarioPublicoDTO datosUsuario = usuarioService.iniciarSesion(formulario);
+
         Map<String, Object> respuesta = new LinkedHashMap<>();
         respuesta.put("mensaje", "Login exitoso");
         respuesta.put("usuario", datosUsuario);
-        
+
         return ResponseEntity.ok(respuesta);
     }
 
-    //GET http://localhost:8080/auth/usuarios
+    // GET http://localhost:8080/auth/usuarios
     @GetMapping("/usuarios")
-    public ResponseEntity<List<PerfilUsuarioPublicoDTO>> listar() {
+    public ResponseEntity<Map<String, Object>> listar() {
+
         List<PerfilUsuarioPublicoDTO> usuarios = usuarioService.listarUsuarios();
-        return ResponseEntity.ok(usuarios);
+
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("mensaje", "Usuarios obtenidos correctamente");
+        respuesta.put("total", usuarios.size());
+        respuesta.put("usuarios", usuarios);
+
+        return ResponseEntity.ok(respuesta);
     }
 
-    //GET http://localhost:8080/auth/usuarios/{id}
+    // GET http://localhost:8080/auth/usuarios/{id}
     @GetMapping("/usuarios/{id}")
-    public ResponseEntity<PerfilUsuarioPublicoDTO> buscarPorId(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> buscarPorId(@PathVariable Integer id) {
 
         PerfilUsuarioPublicoDTO usuario = usuarioService.buscarPorId(id);
-        return ResponseEntity.ok(usuario);
+
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("mensaje", "Usuario encontrado correctamente");
+        respuesta.put("usuario", usuario);
+
+        return ResponseEntity.ok(respuesta);
     }
 
-    //PUT http://localhost:8080/auth/usuarios/{id}
+    // PUT http://localhost:8080/auth/usuarios/{id}
     @PutMapping("/usuarios/{id}")
     public ResponseEntity<Map<String, Object>> actualizar(@PathVariable Integer id, @RequestBody Usuario usuario) {
-        Usuario usuarioActualizado = usuarioService.actualizar(id, usuario);
-        
+
+        PerfilUsuarioPublicoDTO usuarioActualizado = usuarioService.actualizar(id, usuario);
+
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("mensaje", "Usuario actualizado correctamente");
         respuesta.put("usuario", usuarioActualizado);
-        
+
         return ResponseEntity.ok(respuesta);
     }
 
-    //DELETE http://localhost:8080/auth/usuarios/{id}
+    // DELETE http://localhost:8080/auth/usuarios/{id}
     @DeleteMapping("/usuarios/{id}")
     public ResponseEntity<Map<String, String>> eliminar(@PathVariable Integer id) {
+
         usuarioService.eliminar(id);
-        
+
         Map<String, String> respuesta = new HashMap<>();
-        respuesta.put("mensaje", "Usuario eliminado con éxito");
-        
+        respuesta.put("mensaje", "Usuario eliminado correctamente");
+
         return ResponseEntity.ok(respuesta);
     }
 
