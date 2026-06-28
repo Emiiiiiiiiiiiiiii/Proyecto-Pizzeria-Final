@@ -4,16 +4,27 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// DTO usado para responder cuando un pedido se crea o consulta correctamente
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//Este es el objeto que devolveremos al usuario cuando el pedido se cree con éxito.
 public class PedidoResponseDTO {
+    // ID del pedido creado
     private Integer id;
+
+    // Nombre del cliente
     private String nombreCliente;
+
+    // Monto total del pedido
     private Integer montoTotal;
+
+    // Estado actual del pedido
     private String estado;
+
+    // Fecha de creación del pedido
     private String fechaPedido;
+
+    // Mensaje de respuesta
     private String mensaje;
 
 }
