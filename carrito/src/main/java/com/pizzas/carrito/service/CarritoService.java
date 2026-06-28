@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -26,9 +27,13 @@ public class CarritoService {
     // Logger para registrar acciones importantes del carrito
     private static final Logger logger = LoggerFactory.getLogger(CarritoService.class);
 
-    // URLs de los microservicios que consume carrito
-    private static final String AUTH_URL = "http://localhost:8080/auth/usuarios/";
-    private static final String CATALOGO_URL = "http://localhost:8081/catalogo/pizzas/";
+    // URL del microservicio autenticación desde application.properties
+    @Value("${url.auth}")
+    private String AUTH_URL;
+
+    // URL del microservicio catálogo desde application.properties
+    @Value("${url.catalogo}")
+    private String CATALOGO_URL;
 
     // Repositorio del carrito
     private final CarritoRepository repository;
