@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,10 @@ public class UsuarioService {
 
     // Cliente usado para comunicarse con otros microservicios
     private final RestTemplate restTemplate;
+
+    // URL del microservicio notificaciones desde application.properties
+    @Value("${url.notificaciones}")
+    private String URL_NOTIFICACIONES;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RestTemplate restTemplate) {
         this.usuarioRepository = usuarioRepository;
@@ -72,9 +77,11 @@ public class UsuarioService {
             peticionNoti.put("usuarioId", usuarioGuardado.getId());
             peticionNoti.put("pedidoId", 0);
 
-            String urlNotificaciones = "http://localhost:8086/notificaciones/enviar";
-
-            Map<String, Object> respuestaNoti = restTemplate.postForObject(urlNotificaciones, peticionNoti, Map.class);
+            Map<String, Object> respuestaNoti = restTemplate.postForObject(
+                    URL_NOTIFICACIONES + "enviar",
+                    peticionNoti,
+                    Map.class
+            );
 
             if (respuestaNoti != null && respuestaNoti.get("mensaje") != null) {
                 respuesta.put("notificacion_sistema", respuestaNoti.get("mensaje"));
