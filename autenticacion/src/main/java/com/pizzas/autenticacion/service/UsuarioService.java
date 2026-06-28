@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,15 +15,23 @@ import org.springframework.web.client.RestTemplate;
 
 import com.pizzas.autenticacion.dto.FormularioIngresoDTO;
 import com.pizzas.autenticacion.dto.PerfilUsuarioPublicoDTO;
+import com.pizzas.autenticacion.dto.UsuarioRegistroDTO;
 import com.pizzas.autenticacion.exception.ExcepcionPersonalizada;
 import com.pizzas.autenticacion.model.Usuario;
 import com.pizzas.autenticacion.repository.UsuarioRepository;
 
 @Service
-
 public class UsuarioService {
+    // Permite registrar eventos importantes del microservicio
+    private static final Logger logger = LoggerFactory.getLogger(UsuarioService.class);
+
+    // Repositorio para acceder a la tabla usuarios
     private final UsuarioRepository usuarioRepository;
+
+    // Encoder para encriptar y comparar contraseñas
     private final PasswordEncoder passwordEncoder;
+
+    // Cliente usado para comunicarse con otros microservicios
     private final RestTemplate restTemplate;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RestTemplate restTemplate) {
@@ -30,93 +40,159 @@ public class UsuarioService {
         this.restTemplate = restTemplate;
     }
 
-    public Map<String, Object> registrar(Usuario usuario) {
-    if (usuarioRepository.findByEmail(usuario.getEmail()).isPresent()) {
-        throw new ExcepcionPersonalizada("El correo electrónico ya se encuentra registrado.", HttpStatus.BAD_REQUEST);
-    }
+    // Registra un usuario nuevo y lo guarda con rol CLIENTE
+    public Map<String, Object> registrar(UsuarioRegistroDTO dto) {
 
-    usuario.setRol("CLIENTE");
-    usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        String emailNormalizado = dto.getEmail().trim().toLowerCase();
 
-    Usuario usuarioGuardado = usuarioRepository.save(usuario);
-
-    Map<String, Object> respuesta = new LinkedHashMap<>();
-    respuesta.put("usuario", usuarioGuardado);
-
-    try {
-        Map<String, Object> peticionNoti = new HashMap<>();
-        peticionNoti.put("tipo", "REGISTRO");
-        peticionNoti.put("destinatario", usuarioGuardado.getEmail());
-        peticionNoti.put("usuarioId", usuarioGuardado.getId());
-        peticionNoti.put("pedidoId", 0);
-        String urlNotificaciones = "http://localhost:8086/notificaciones/enviar";
-        
-        Map<String, Object> respuestaNoti = restTemplate.postForObject(urlNotificaciones, peticionNoti, Map.class);
-        
-        if (respuestaNoti != null && respuestaNoti.get("mensaje") != null) {
-            respuesta.put("notificacion_sistema", respuestaNoti.get("mensaje"));
-        } else {
-            respuesta.put("notificacion_sistema", "BIENVENIDO A LAS GORDAS PIZZAS");
+        if (usuarioRepository.existsByEmail(emailNormalizado)) {
+            logger.warn("Intento de registro con correo ya existente: {}", emailNormalizado);
+            throw new ExcepcionPersonalizada("El correo electrónico ya se encuentra registrado.", HttpStatus.BAD_REQUEST);
         }
-        
-    } catch (Exception e) {
-        System.err.println("Error real en la comunicacion: " + e.getMessage());
-        respuesta.put("notificacion_sistema", "Alerta: MS Notificaciones fuera de línea.");
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(dto.getNombre().trim());
+        usuario.setApellido(dto.getApellido().trim());
+        usuario.setEmail(emailNormalizado);
+        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        usuario.setRol("CLIENTE");
+
+        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+
+        logger.info("Usuario registrado correctamente con ID: {}", usuarioGuardado.getId());
+
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("mensaje", "Usuario registrado correctamente");
+        respuesta.put("usuario", convertirAPerfilPublico(usuarioGuardado));
+
+        try {
+            Map<String, Object> peticionNoti = new HashMap<>();
+            peticionNoti.put("tipo", "REGISTRO");
+            peticionNoti.put("destinatario", usuarioGuardado.getEmail());
+            peticionNoti.put("usuarioId", usuarioGuardado.getId());
+            peticionNoti.put("pedidoId", 0);
+
+            String urlNotificaciones = "http://localhost:8086/notificaciones/enviar";
+
+            Map<String, Object> respuestaNoti = restTemplate.postForObject(urlNotificaciones, peticionNoti, Map.class);
+
+            if (respuestaNoti != null && respuestaNoti.get("mensaje") != null) {
+                respuesta.put("notificacion_sistema", respuestaNoti.get("mensaje"));
+            } else {
+                respuesta.put("notificacion_sistema", "BIENVENIDO A LAS GORDAS PIZZAS");
+            }
+
+            logger.info("Notificación de registro enviada para usuario ID: {}", usuarioGuardado.getId());
+
+        } catch (Exception e) {
+            logger.warn("No se pudo comunicar con MS Notificaciones: {}", e.getMessage());
+            respuesta.put("notificacion_sistema", "Alerta: MS Notificaciones fuera de línea.");
+        }
+
+        return respuesta;
     }
 
-    return respuesta;
-
-    }
-
+    // Valida email y contraseña para iniciar sesión
     public PerfilUsuarioPublicoDTO iniciarSesion(FormularioIngresoDTO formulario) {
-        Usuario usuarioExistente = usuarioRepository.findByEmail(formulario.getEmail())
-                .orElseThrow(() -> new ExcepcionPersonalizada("El correo o la contraseña son incorrectos.", HttpStatus.UNAUTHORIZED));
+
+        String emailNormalizado = formulario.getEmail().trim().toLowerCase();
+
+        Usuario usuarioExistente = usuarioRepository.findByEmail(emailNormalizado)
+                .orElseThrow(() -> {
+                    logger.warn("Intento de login con correo no registrado: {}", emailNormalizado);
+                    return new ExcepcionPersonalizada("El correo o la contraseña son incorrectos.", HttpStatus.UNAUTHORIZED);
+                });
 
         if (!passwordEncoder.matches(formulario.getPassword(), usuarioExistente.getPassword())) {
+            logger.warn("Contraseña incorrecta para usuario ID: {}", usuarioExistente.getId());
             throw new ExcepcionPersonalizada("El correo o la contraseña son incorrectos.", HttpStatus.UNAUTHORIZED);
         }
 
-        return new PerfilUsuarioPublicoDTO(
-            usuarioExistente.getId(), usuarioExistente.getNombre(), usuarioExistente.getApellido(),
-            usuarioExistente.getEmail(), usuarioExistente.getRol()
-        );
+        logger.info("Login exitoso para usuario ID: {}", usuarioExistente.getId());
+
+        return convertirAPerfilPublico(usuarioExistente);
     }
 
+    // Lista todos los usuarios sin mostrar contraseñas
     public List<PerfilUsuarioPublicoDTO> listarUsuarios() {
+
         List<Usuario> listaUsuarios = usuarioRepository.findAll();
         List<PerfilUsuarioPublicoDTO> listaDtos = new ArrayList<>();
-        
-        for (Usuario u : listaUsuarios) {
-            listaDtos.add(new PerfilUsuarioPublicoDTO(u.getId(), u.getNombre(), u.getApellido(), u.getEmail(), u.getRol()));
+
+        for (Usuario usuario : listaUsuarios) {
+            listaDtos.add(convertirAPerfilPublico(usuario));
         }
+
+        logger.info("Listado de usuarios obtenido correctamente. Total: {}", listaDtos.size());
+
         return listaDtos;
     }
 
+    // Busca un usuario por ID y devuelve solo sus datos públicos
     public PerfilUsuarioPublicoDTO buscarPorId(Integer id) {
-        Usuario u = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ExcepcionPersonalizada("El usuario con el ID especificado no existe.", HttpStatus.NOT_FOUND));
-        return new PerfilUsuarioPublicoDTO(u.getId(), u.getNombre(), u.getApellido(), u.getEmail(), u.getRol());
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Usuario no encontrado con ID: {}", id);
+                    return new ExcepcionPersonalizada("El usuario con el ID especificado no existe.", HttpStatus.NOT_FOUND);
+                });
+
+        return convertirAPerfilPublico(usuario);
     }
 
-    public Usuario actualizar(Integer id, Usuario datosNuevos) {
-        Usuario u = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ExcepcionPersonalizada("No se puede actualizar. El usuario no existe.", HttpStatus.NOT_FOUND));
+    // Actualiza datos básicos del usuario
+    public PerfilUsuarioPublicoDTO actualizar(Integer id, Usuario datosNuevos) {
 
-        u.setNombre(datosNuevos.getNombre());
-        u.setApellido(datosNuevos.getApellido());
-        u.setEmail(datosNuevos.getEmail());
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Intento de actualizar usuario inexistente con ID: {}", id);
+                    return new ExcepcionPersonalizada("No se puede actualizar. El usuario no existe.", HttpStatus.NOT_FOUND);
+                });
 
-        if (datosNuevos.getPassword() != null && !datosNuevos.getPassword().isEmpty()) {
-            u.setPassword(passwordEncoder.encode(datosNuevos.getPassword()));
+        String emailNormalizado = datosNuevos.getEmail().trim().toLowerCase();
+
+        if (usuarioRepository.existsByEmailAndIdNot(emailNormalizado, id)) {
+            logger.warn("Intento de actualizar usuario ID {} con email ya usado: {}", id, emailNormalizado);
+            throw new ExcepcionPersonalizada("El correo electrónico ya está siendo usado por otro usuario.", HttpStatus.BAD_REQUEST);
         }
-        return usuarioRepository.save(u);
+
+        usuario.setNombre(datosNuevos.getNombre().trim());
+        usuario.setApellido(datosNuevos.getApellido().trim());
+        usuario.setEmail(emailNormalizado);
+
+        if (datosNuevos.getPassword() != null && !datosNuevos.getPassword().isBlank()) {
+            usuario.setPassword(passwordEncoder.encode(datosNuevos.getPassword()));
+        }
+
+        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+        logger.info("Usuario actualizado correctamente con ID: {}", usuarioActualizado.getId());
+
+        return convertirAPerfilPublico(usuarioActualizado);
     }
 
+    // Elimina un usuario si existe
     public void eliminar(Integer id) {
+
         if (!usuarioRepository.existsById(id)) {
+            logger.warn("Intento de eliminar usuario inexistente con ID: {}", id);
             throw new ExcepcionPersonalizada("No se puede eliminar. El usuario no existe.", HttpStatus.NOT_FOUND);
         }
+
         usuarioRepository.deleteById(id);
+
+        logger.info("Usuario eliminado correctamente con ID: {}", id);
+    }
+
+    // Convierte Usuario a DTO público para no exponer la contraseña
+    private PerfilUsuarioPublicoDTO convertirAPerfilPublico(Usuario usuario) {
+        return new PerfilUsuarioPublicoDTO(
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getApellido(),
+                usuario.getEmail(),
+                usuario.getRol()
+        );
     }
 
 }
