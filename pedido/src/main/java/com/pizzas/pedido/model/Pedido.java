@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import jakarta.persistence.Lob;
+
 
 // Lombok genera getters, setters y constructores
 import lombok.AllArgsConstructor;
@@ -76,6 +78,13 @@ public class Pedido {
     @Min(value = 1, message = "Debe haber al menos 1 producto en el pedido")
     @Column(nullable = false)
     private Integer cantidadTotalItems;
+
+    // Detalle de productos comprados en el pedido
+    @NotBlank(message = "El detalle de productos es obligatorio")
+    @Size(max = 2000, message = "El detalle de productos no puede superar los 2000 caracteres")
+    @Lob
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String detalleProductos;
 
     // Estado actual del pedido
     @NotBlank(message = "El estado del pedido es obligatorio")
