@@ -1,23 +1,17 @@
 package com.pizzas.certificacion.repository;
 
-// Permite trabajar con listas de certificaciones
 import java.util.List;
-
-// Permite manejar resultados que pueden existir o no
 import java.util.Optional;
 
-// JpaRepository entrega CRUD automático
 import org.springframework.data.jpa.repository.JpaRepository;
-
-// Marca esta interfaz como repositorio de Spring
 import org.springframework.stereotype.Repository;
 
-// Importa el modelo Certificacion
 import com.pizzas.certificacion.model.Certificacion;
 
+// Repository para consultar certificaciones
 @Repository
 public interface CertificacionRepository extends JpaRepository<Certificacion, Integer> {
-// Busca una certificación por el ID del pedido
+    // Busca una certificación por el ID del pedido
     Optional<Certificacion> findByPedidoId(Integer pedidoId);
 
     // Lista certificaciones asociadas a un usuario
