@@ -1,60 +1,145 @@
 package com.pizzas.resenas.exception;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-@ControllerAdvice
+// Maneja errores de forma centralizada para reseñas
+@RestControllerAdvice
 public class ManejadorErrores {
 
-    // Manejo de tus errores de negocio personalizados
-    @ExceptionHandler(ExcepcionPersonalizada.class)
-    public ResponseEntity<ErrorDTO> handleExcepcionPersonalizada(ExcepcionPersonalizada ex, HttpServletRequest request) {
-        ErrorDTO error = new ErrorDTO(
-            LocalDateTime.now(),
-            HttpStatus.BAD_REQUEST.value(),
-            ex.getMessage(),
-            null,
-            request.getRequestURI()
+    private static final Logger logger = LoggerFactory.getLogger(ManejadorErrores.class);
+
+    // Maneja errores de validación
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorDTO> manejarValidaciones(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        List<String> errores = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.toList());
+
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Error de validación en reseñas",
+                errores,
+                request.getRequestURI()
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+
+        logger.warn("Error de validación en {}: {}", request.getRequestURI(), errores);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
     }
 
-    // Se activa cuando falla alguna validación como el @NotBlank de tu clase ResenaRequestDTO
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-    Map<String, Object> errores = new HashMap<>();
-    
-    // Recorremos todos los campos que fallaron y guardamos su mensaje
-    ex.getBindingResult().getFieldErrors().forEach(error -> {
-        errores.put(error.getField(), error.getDefaultMessage());
-    });
+    // Maneja errores personalizados
+    @ExceptionHandler(ExcepcionPersonalizada.class)
+    public ResponseEntity<ErrorDTO> manejarExcepcionPersonalizada(
+            ExcepcionPersonalizada ex,
+            HttpServletRequest request) {
 
-    Map<String, Object> respuesta = new HashMap<>();
-    respuesta.put("timestamp", LocalDateTime.now());
-    respuesta.put("status", HttpStatus.BAD_REQUEST.value());
-    respuesta.put("mensaje", "Error de validación en los campos");
-    respuesta.put("errores", errores); // Aquí verás qué campo falta
-
-    return new ResponseEntity<>(respuesta, HttpStatus.BAD_REQUEST);
-}
-
-    // Manejo de errores inesperados del sistema
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorDTO> manejarErrorGeneral(Exception ex, HttpServletRequest request) {
-        ErrorDTO error = new ErrorDTO(
-            LocalDateTime.now(),
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Error Interno del Servidor",
-            null,
-            request.getRequestURI()
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                ex.getStatus().value(),
+                ex.getMessage(),
+                List.of(ex.getMessage()),
+                request.getRequestURI()
         );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        logger.warn("Error controlado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(ex.getStatus()).body(errorDTO);
+    }
+
+    // Maneja errores de integridad de base de datos
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorDTO> manejarIntegridadDatos(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "Error de integridad en la base de datos",
+                List.of("No se pudo guardar la reseña porque existen datos repetidos o inválidos."),
+                request.getRequestURI()
+        );
+
+        logger.error("Error de integridad en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorDTO);
+    }
+
+    // Maneja JSON mal escrito
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorDTO> manejarJsonInvalido(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "JSON inválido",
+                List.of("Revisa que el body esté bien escrito y que los tipos de datos sean correctos."),
+                request.getRequestURI()
+        );
+
+        logger.warn("JSON inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
+    }
+
+    // Maneja errores de tipo en PathVariable
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorDTO> manejarTipoIncorrecto(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Tipo de dato incorrecto",
+                List.of("El parámetro '" + ex.getName() + "' tiene un valor inválido."),
+                request.getRequestURI()
+        );
+
+        logger.warn("Tipo incorrecto en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
+    }
+
+    // Maneja errores inesperados
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDTO> manejarErrorGeneral(
+            Exception ex,
+            HttpServletRequest request) {
+
+        ErrorDTO errorDTO = new ErrorDTO(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Error interno del servidor",
+                List.of("Ocurrió un error inesperado en reseñas."),
+                request.getRequestURI()
+        );
+
+        logger.error("Error inesperado en {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDTO);
     }
 }
