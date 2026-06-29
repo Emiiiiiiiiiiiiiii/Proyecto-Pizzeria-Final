@@ -4,11 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// DTO usado para responder datos de pizzas
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class CatalogoDTO {
+public class CatalogoResponseDTO {
+    
     private Integer id;
     private String nombre;
     private String tipo;

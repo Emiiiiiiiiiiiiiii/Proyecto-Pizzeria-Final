@@ -1,23 +1,21 @@
-package com.servicio.notificaciones.dto;
+package com.servicio.notificaciones.exception;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// DTO usado para responder errores de forma ordenada
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorDTO {
-
-
     private LocalDateTime timestamp;
     private int status;
     private String mensaje;
-    private Map<String, String> errores;
+    private List<String> errores;
     private String path;
 
-    
 }

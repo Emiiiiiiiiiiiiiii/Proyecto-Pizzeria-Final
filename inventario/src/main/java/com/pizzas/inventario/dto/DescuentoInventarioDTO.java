@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-// DTO usado para crear o actualizar inventario
+// DTO usado para descontar stock desde pedido
 @Data
-public class InventarioRequestDTO {
+public class DescuentoInventarioDTO {
     @NotNull(message = "El ID del catálogo es obligatorio")
     @Positive(message = "El ID del catálogo debe ser positivo")
     private Integer catalogoId;
 
-    @NotNull(message = "La cantidad no puede estar vacía")
-    @Min(value = 0, message = "El stock no puede ser negativo")
+    @NotNull(message = "La cantidad a descontar es obligatoria")
+    @Min(value = 1, message = "La cantidad a descontar debe ser al menos 1")
     private Integer cantidad;
 
 }

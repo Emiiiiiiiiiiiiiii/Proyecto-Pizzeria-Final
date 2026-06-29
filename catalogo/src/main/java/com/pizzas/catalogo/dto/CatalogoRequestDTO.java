@@ -1,67 +1,42 @@
-package com.pizzas.catalogo.model;
+package com.pizzas.catalogo.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-// Modelo que representa una pizza dentro del catálogo
-@Entity
-@Table(name = "catalogo")
+// DTO usado para recibir datos al crear o actualizar pizzas
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 
-public class Catalogo {
-    // ID único de la pizza
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    // Nombre de la pizza
-    @NotBlank(message = "El nombre no puede estar vacío")
+public class CatalogoRequestDTO {
+     @NotBlank(message = "El nombre no puede estar vacío")
     @Size(min = 2, max = 100, message = "El nombre debe tener entre 2 y 100 caracteres")
     @Pattern(
         regexp = "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$",
         message = "El nombre solo puede contener letras y espacios"
     )
-    @Column(nullable = false, length = 100)
     private String nombre;
 
-    // Tipo o categoría de pizza
     @NotBlank(message = "El tipo no puede estar vacío")
     @Size(min = 2, max = 50, message = "El tipo debe tener entre 2 y 50 caracteres")
     @Pattern(
         regexp = "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$",
         message = "El tipo solo puede contener letras y espacios"
     )
-    @Column(nullable = false, length = 50)
     private String tipo;
 
-    // Tamaño de la pizza
     @NotBlank(message = "El tamaño no puede estar vacío")
     @Size(min = 2, max = 50, message = "El tamaño debe tener entre 2 y 50 caracteres")
     @Pattern(
         regexp = "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$",
         message = "El tamaño solo puede contener letras y espacios"
     )
-    @Column(nullable = false, length = 50)
     private String tamanio;
 
-    // Precio de la pizza
     @NotNull(message = "El precio es obligatorio")
     @Positive(message = "El precio debe ser mayor a cero")
-    @Column(nullable = false)
     private Integer precio;
 
 }

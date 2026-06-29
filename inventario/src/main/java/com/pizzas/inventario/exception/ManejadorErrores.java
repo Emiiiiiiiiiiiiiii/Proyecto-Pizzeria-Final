@@ -1,4 +1,5 @@
-package com.pizzas.catalogo.exception;
+package com.pizzas.inventario.exception;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,14 +18,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-// Maneja errores de forma centralizada para catálogo
+// Maneja errores de forma centralizada para inventario
 @RestControllerAdvice
 
 public class ManejadorErrores {
-
     private static final Logger logger = LoggerFactory.getLogger(ManejadorErrores.class);
 
-    // Maneja errores de validación de DTOs
+    // Maneja errores de validación
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDTO> manejarValidaciones(
             MethodArgumentNotValidException ex,
@@ -39,7 +39,7 @@ public class ManejadorErrores {
         ErrorDTO errorDTO = new ErrorDTO(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Error de validación en catálogo",
+                "Error de validación en inventario",
                 errores,
                 request.getRequestURI()
         );
@@ -78,7 +78,7 @@ public class ManejadorErrores {
                 LocalDateTime.now(),
                 HttpStatus.CONFLICT.value(),
                 "Error de integridad en la base de datos",
-                List.of("No se pudo guardar la pizza porque existen datos repetidos o inválidos."),
+                List.of("No se pudo guardar inventario porque existen datos repetidos o inválidos."),
                 request.getRequestURI()
         );
 
@@ -87,7 +87,7 @@ public class ManejadorErrores {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorDTO);
     }
 
-    // Maneja JSON mal escrito o tipos incorrectos
+    // Maneja JSON mal escrito
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorDTO> manejarJsonInvalido(
             HttpMessageNotReadableException ex,
@@ -125,7 +125,7 @@ public class ManejadorErrores {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
     }
 
-    // Maneja cualquier error no controlado
+    // Maneja errores inesperados
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDTO> manejarErrorGeneral(
             Exception ex,
@@ -135,7 +135,7 @@ public class ManejadorErrores {
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Error interno del servidor",
-                List.of("Ocurrió un error inesperado en catálogo."),
+                List.of("Ocurrió un error inesperado en inventario."),
                 request.getRequestURI()
         );
 
@@ -143,7 +143,5 @@ public class ManejadorErrores {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDTO);
     }
-
-    
 
 }

@@ -1,10 +1,10 @@
-package com.pizzas.catalogo.exception;
+package com.servicio.notificaciones.exception;
 
 import org.springframework.http.HttpStatus;
 
-// Excepción propia para manejar errores del catálogo
-
+// Excepción propia del microservicio notificaciones
 public class ExcepcionPersonalizada extends RuntimeException{
+
     private static final long serialVersionUID = 1L;
 
     // Estado HTTP asociado al error
@@ -22,7 +22,7 @@ public class ExcepcionPersonalizada extends RuntimeException{
         this.status = status;
     }
 
-    // Retorna el estado HTTP asociado al error
+    // Retorna el estado HTTP asociado
     public HttpStatus getStatus() {
         return status;
     }

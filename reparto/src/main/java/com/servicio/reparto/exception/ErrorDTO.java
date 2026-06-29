@@ -1,4 +1,4 @@
-package com.pizzas.inventario.exception;
+package com.servicio.reparto.exception;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,25 +7,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// DTO usado para devolver errores de forma ordenada
+// DTO usado para responder errores de forma ordenada
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class ErrorDTO {
-     // Fecha y hora del error
+
     private LocalDateTime timestamp;
-
-    // Código HTTP
     private int status;
-
-    // Mensaje principal
     private String mensaje;
-
-    // Lista de errores específicos
     private List<String> errores;
-
-    // Ruta donde ocurrió el error
     private String path;
 
 }
