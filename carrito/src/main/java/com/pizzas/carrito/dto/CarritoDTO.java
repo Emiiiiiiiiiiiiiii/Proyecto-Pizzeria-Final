@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class CarritoDTO {
     // ID del usuario dueño del carrito
     @NotNull(message = "El ID del usuario es obligatorio")
