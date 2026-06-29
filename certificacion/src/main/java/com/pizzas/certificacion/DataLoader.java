@@ -1,4 +1,4 @@
-package com.pizzas.carrito;
+package com.pizzas.certificacion;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 // DataLoader del microservicio
 @Configuration
 public class DataLoader {
+
     private static final Logger logger = LoggerFactory.getLogger(DataLoader.class);
 
     @Bean
