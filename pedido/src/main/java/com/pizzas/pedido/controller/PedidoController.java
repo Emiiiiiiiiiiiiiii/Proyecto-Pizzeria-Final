@@ -21,10 +21,17 @@ import com.pizzas.pedido.dto.PedidoResponseDTO;
 import com.pizzas.pedido.model.Pedido;
 import com.pizzas.pedido.service.PedidoService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+// Controlador REST para gestionar pedidos
 @RestController
 @RequestMapping("/pedidos")
+@Tag(name = "Pedidos", description = "Endpoints para crear, consultar, actualizar y eliminar pedidos")
 public class PedidoController {
     // Service encargado de la lógica del pedido
     private final PedidoService pedidoService;
@@ -34,7 +41,18 @@ public class PedidoController {
         this.pedidoService = pedidoService;
     }
 
-    // Crea un pedido usando usuario, carrito, pagos, inventario y notificaciones
+    // POST http://localhost:8083/pedidos/guardar
+    @Operation(
+            summary = "Crear pedido",
+            description = "Crea un pedido usando el carrito del usuario, descuenta inventario, procesa pago y registra notificación."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Pedido creado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o carrito vacío"),
+            @ApiResponse(responseCode = "404", description = "Usuario o recurso relacionado no encontrado"),
+            @ApiResponse(responseCode = "502", description = "Error al comunicarse con otro microservicio"),
+            @ApiResponse(responseCode = "503", description = "Microservicio externo no disponible")
+    })
     @PostMapping("/guardar")
     public ResponseEntity<Map<String, Object>> crear(@Valid @RequestBody PedidoRequestDTO request) {
 
@@ -47,7 +65,14 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
-    // Lista todos los pedidos registrados
+    // GET http://localhost:8083/pedidos
+    @Operation(
+            summary = "Listar pedidos",
+            description = "Obtiene todos los pedidos registrados."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedidos obtenidos correctamente")
+    })
     @GetMapping
     public ResponseEntity<Map<String, Object>> listar() {
 
@@ -61,9 +86,19 @@ public class PedidoController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Busca un pedido específico por su ID
+    // GET http://localhost:8083/pedidos/{id}
+    @Operation(
+            summary = "Buscar pedido por ID",
+            description = "Obtiene un pedido específico según su ID."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedido encontrado correctamente"),
+            @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> buscarPorId(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> buscarPorId(
+            @Parameter(description = "ID del pedido", example = "1")
+            @PathVariable Integer id) {
 
         Pedido pedido = pedidoService.buscarPorId(id);
 
@@ -74,9 +109,19 @@ public class PedidoController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Busca todos los pedidos realizados por un usuario
+    // GET http://localhost:8083/pedidos/usuario/{usuarioId}
+    @Operation(
+            summary = "Buscar pedidos por usuario",
+            description = "Lista todos los pedidos realizados por un usuario."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedidos del usuario obtenidos correctamente"),
+            @ApiResponse(responseCode = "404", description = "No existen pedidos para el usuario indicado")
+    })
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<Map<String, Object>> buscarPorUsuario(@PathVariable Integer usuarioId) {
+    public ResponseEntity<Map<String, Object>> buscarPorUsuario(
+            @Parameter(description = "ID del usuario", example = "1")
+            @PathVariable Integer usuarioId) {
 
         List<Pedido> pedidos = pedidoService.buscarPorUsuario(usuarioId);
 
@@ -89,9 +134,20 @@ public class PedidoController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Busca pedidos por estado, por ejemplo PAGADO o ENTREGADO
+    // GET http://localhost:8083/pedidos/estado/{estado}
+    @Operation(
+            summary = "Buscar pedidos por estado",
+            description = "Lista pedidos filtrados por estado, por ejemplo PAGADO, ENTREGADO o CANCELADO."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedidos filtrados por estado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Estado inválido"),
+            @ApiResponse(responseCode = "404", description = "No existen pedidos con el estado indicado")
+    })
     @GetMapping("/estado/{estado}")
-    public ResponseEntity<Map<String, Object>> buscarPorEstado(@PathVariable String estado) {
+    public ResponseEntity<Map<String, Object>> buscarPorEstado(
+            @Parameter(description = "Estado del pedido", example = "PAGADO")
+            @PathVariable String estado) {
 
         List<Pedido> pedidos = pedidoService.buscarPorEstado(estado);
 
@@ -104,9 +160,19 @@ public class PedidoController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Actualiza el estado de un pedido
+    // PUT http://localhost:8083/pedidos/{id}/estado
+    @Operation(
+            summary = "Actualizar estado del pedido",
+            description = "Actualiza el estado de un pedido existente."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Estado del pedido actualizado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Estado inválido"),
+            @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+    })
     @PutMapping("/{id}/estado")
     public ResponseEntity<Map<String, Object>> actualizarEstado(
+            @Parameter(description = "ID del pedido", example = "1")
             @PathVariable Integer id,
             @Valid @RequestBody EstadoPedidoDTO dto) {
 
@@ -119,9 +185,19 @@ public class PedidoController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Elimina un pedido por su ID
+    // DELETE http://localhost:8083/pedidos/{id}
+    @Operation(
+            summary = "Eliminar pedido",
+            description = "Elimina un pedido según su ID."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedido eliminado correctamente"),
+            @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> eliminar(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, String>> eliminar(
+            @Parameter(description = "ID del pedido", example = "1")
+            @PathVariable Integer id) {
 
         pedidoService.eliminarPedido(id);
 
