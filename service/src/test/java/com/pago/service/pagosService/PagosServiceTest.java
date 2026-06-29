@@ -1,24 +1,23 @@
 package com.pago.service.pagosService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -27,10 +26,10 @@ import org.springframework.web.client.RestTemplate;
 import com.pago.service.ExcepcionPersonalizada;
 import com.pago.service.dto.PagosDTO;
 import com.pago.service.model.Pagos;
-import com.pago.service.pagosService.PagosService;
 import com.pago.service.repository.PagosRepository;
 
 // Pruebas unitarias para PagosService usando JUnit y Mockito
+// Revisión, optimización y aseguramiento de cobertura-M.O.S
 @ExtendWith(MockitoExtension.class)
 public class PagosServiceTest {
      @Mock
