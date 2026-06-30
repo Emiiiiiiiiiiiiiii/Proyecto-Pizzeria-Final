@@ -1,0 +1,88 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: ms-autenticacion
+              uri: lb://MS-AUTENTICACION
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-catalogo
+              uri: lb://MS-CATALOGO
+              predicates:
+                - Path=/api/catalogo/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-carrito
+              uri: lb://MS-CARRITO
+              predicates:
+                - Path=/api/carrito/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-pedido
+              uri: lb://MS-PEDIDO
+              predicates:
+                - Path=/api/pedidos/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-inventario
+              uri: lb://MS-INVENTARIO
+              predicates:
+                - Path=/api/inventario/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-pagos
+              uri: lb://MS-PAGOS
+              predicates:
+                - Path=/api/pagos/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-notificaciones
+              uri: lb://MS-NOTIFICACIONES
+              predicates:
+                - Path=/api/notificaciones/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-reparto
+              uri: lb://MS-REPARTO
+              predicates:
+                - Path=/api/reparto/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-resenas
+              uri: lb://MS-RESENAS
+              predicates:
+                - Path=/api/resenas/**
+              filters:
+                - StripPrefix=1
+
+            - id: ms-certificacion
+              uri: lb://MS-CERTIFICACION
+              predicates:
+                - Path=/api/certificaciones/**
+              filters:
+                - StripPrefix=1
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
