@@ -1,0 +1,274 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-pizzeria
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_pizzeria_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+
+  autenticacion:
+    build: ./autenticacion
+    container_name: ms-autenticacion
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/autenticacion?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_NOTIFICACIONES: http://notificaciones:8086/notificaciones/
+
+  catalogo:
+    build: ./catalogo
+    container_name: ms-catalogo
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/catalogo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+
+  carrito:
+    build: ./carrito
+    container_name: ms-carrito
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      catalogo:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/carrito?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_AUTH: http://autenticacion:8080/auth/usuarios/
+      URL_CATALOGO: http://catalogo:8081/catalogo/pizzas/
+
+  pedido:
+    build: ./pedido
+    container_name: ms-pedido
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      carrito:
+        condition: service_started
+      inventario:
+        condition: service_started
+      pagos:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pedidos?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_AUTH: http://autenticacion:8080/auth/
+      URL_CARRITO: http://carrito:8082/carrito/
+      URL_INVENTARIO: http://inventario:8084/inventario/
+      URL_PAGOS: http://pagos:8085/pagos/
+      URL_NOTIFICACIONES: http://notificaciones:8086/notificaciones/
+
+  inventario:
+    build: ./inventario
+    container_name: ms-inventario
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      catalogo:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/inventario?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_CATALOGO: http://catalogo:8081/catalogo/
+
+  pagos:
+    build: ./service
+    container_name: ms-pagos
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pagos?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_AUTH: http://autenticacion:8080/auth/
+      URL_NOTIFICACIONES: http://notificaciones:8086/notificaciones/
+
+  notificaciones:
+    build: ./notificaciones
+    container_name: ms-notificaciones
+    ports:
+      - "8086:8086"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/notificaciones?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+
+  reparto:
+    build: ./reparto
+    container_name: ms-reparto
+    ports:
+      - "8087:8087"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      pedido:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/reparto?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_PEDIDOS: http://pedido:8083/pedidos/
+      URL_AUTH: http://autenticacion:8080/auth/usuarios/
+      URL_NOTIFICACIONES: http://notificaciones:8086/notificaciones/
+
+  resenas:
+    build: ./resenas
+    container_name: ms-resenas
+    ports:
+      - "8088:8088"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      pedido:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/resenas?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_PEDIDOS: http://pedido:8083/pedidos/
+      URL_AUTH: http://autenticacion:8080/auth/usuarios/
+      URL_NOTIFICACIONES: http://notificaciones:8086/notificaciones/
+
+  certificacion:
+    build: ./certificacion
+    container_name: ms-certificacion
+    ports:
+      - "8089:8089"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      pedido:
+        condition: service_started
+      reparto:
+        condition: service_started
+      resenas:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/certificacion?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      URL_PEDIDOS: http://pedido:8083/pedidos/
+      URL_REPARTO: http://reparto:8087/reparto/
+      URL_RESENAS: http://resenas:8088/resenas/
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      autenticacion:
+        condition: service_started
+      catalogo:
+        condition: service_started
+      carrito:
+        condition: service_started
+      pedido:
+        condition: service_started
+      inventario:
+        condition: service_started
+      pagos:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+      reparto:
+        condition: service_started
+      resenas:
+        condition: service_started
+      certificacion:
+        condition: service_started
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+
+volumes:
+  mysql_pizzeria_data:
